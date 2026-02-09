@@ -1,2 +1,2 @@
 # Analysis-and-Design-of-Algorithms
-Process, task, proyect of my university course abouta ADA
+Process, tasks and proyect of my ADA university course

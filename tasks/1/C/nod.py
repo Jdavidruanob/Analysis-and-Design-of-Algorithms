@@ -1,41 +1,48 @@
-from sys import stdin
-def main():
-    t = int(stdin.readline().strip())
-    for i in range(t):  
-        a, b = map(int, stdin.readline().split())
-        ans = 0
-        print(f"Case: {i+1} {ans} ")
-    
+"""
+Jose David Ruano Burbano 8982982
+Tarea 1 - N + NOD(N)
+ADA - Análisis y Diseño de Algoritmos 2026-1
+
+Análisis de complejidad:
+La complejidad temporal total es O(M * log(log M) + T * log K), donde M es el límite máximo (1,000,001), 
+T es el número de casos de prueba y K es la longitud de la secuencia generada.
+
+1. Pre-calculo: O(M * log(log M)). Dominado por la Criba y el llenado del arreglo NOD 
+   para todos los números hasta M. Esto se ejecuta una única vez al inicio.
+2. Consultas: O(T * 2log K). Por cada caso de prueba, realizamos dos busquedas binarias (bisecciones) 
+   sobre la secuencia "seq" para encontrar los índices del rango, lo cual es logarítmico respecto 
+   al tamaño de la secuencia.
+"""
+
 import sys
+sys.setrecursionlimit(3000)
 
-# Aumentamos un poco el límite de recursión por si acaso
-sys.setrecursionlimit(2000)
-
-MAX = 1000001  # El problema dice B <= 1,000,000
+MAX = 1000001
 sieve = [True] * MAX
 div = [None] * MAX
 nod = [0] * MAX
 seq = []
 
-# --- 1. Lógica de Pre-cálculo (Ya la tenías) ---
+# --- funciones de precalculo necesarias,  implementacion tomada de la explicacion hecha por el Profesor Camilo Rocha en clase ---
 
 def pcount(n, d):
-    # Cuenta cuántas veces 'd' divide a 'n'
+    # Cuenta cuantas veces 'd' divide a 'n'
     return 0 if (n % d) != 0 else 1 + pcount(n // d, d)
 
 def make_sieve():
     global sieve, div
     sieve[0] = sieve[1] = False
-    # Optimización: Marcar pares primero
+    
+    # Marcar pares primero
     for j in range(4, MAX, 2):
         sieve[j], div[j] = False, 2
     
     # Criba para impares
     for i in range(3, MAX, 2):
         if sieve[i]:
-            div[i] = i # El divisor de un primo es él mismo
+            div[i] = i 
             for j in range(i * i, MAX, i):
-                if sieve[j]: # Solo marcamos si no ha sido marcado
+                if sieve[j]: 
                     sieve[j] = False
                     div[j] = i
 
@@ -44,89 +51,68 @@ def make_nod():
     nod[1] = 1
     for n in range(2, MAX):
         if sieve[n]:
-            nod[n] = 2 # Si es primo, tiene 2 divisores (1 y él mismo)
+            nod[n] = 2 
         else:
-            # Fórmula recursiva basada en factorización prima
-            # NOD(n) = (potencia + 1) * NOD(n / p^potencia)
             p = div[n]
-            if p is None: p = 2 # Fallback para pares básicos si div no se llenó
+            if p is None: p = 2 
             power = pcount(n, p)
             nod[n] = (power + 1) * nod[n // (p ** power)]
 
 def make_seq():
     global seq
-    # Generamos la secuencia.
-    # N_0 = 1
-    # N_i = N_{i-1} + NOD(N_{i-1})
     seq = [1]
     curr = 1
+    # Generamos la secuencia hasta superar el MAX
     while curr <= MAX:
         next_val = curr + nod[curr]
         seq.append(next_val)
         curr = next_val
 
-# --- 2. La parte que faltaba: Búsqueda Binaria y Solución ---
+# Ejecutamos las funciones para tener todo listo
+make_sieve()
+make_nod()
+make_seq()
 
-def solve():
-    # Pre-calcular todo una sola vez al inicio
-    make_sieve()
-    make_nod()
-    make_seq()
-    
-    # Leer entrada
-    input_data = sys.stdin.read().split()
-    if not input_data:
-        return
 
-    iterator = iter(input_data)
-    try:
-        num_cases = int(next(iterator))
-    except StopIteration:
-        return
-
-    for case_num in range(1, num_cases + 1):
-        try:
-            A = int(next(iterator))
-            B = int(next(iterator))
-        except StopIteration:
-            break
-
-        # --- BÚSQUEDA BINARIA 1: Límite Inferior (Lower Bound) ---
-        # Busamos el índice L tal que seq[L] >= A
+def main():
+    t = int(sys.stdin.readline().strip())
+    for i in range(t):  
+        a, b = map(int, sys.stdin.readline().split())
+        
+        # --- busqueda 1: 
+        # Buscamos el primer índice donde seq[mid] >= A
         low = 0
         hi = len(seq) - 1
-        ans_low = len(seq) # Valor por defecto si todos son menores que A
+        ans_low = len(seq) 
         
         while low <= hi:
             mid = (low + hi) // 2
-            if seq[mid] >= A:
+            if seq[mid] >= a:
                 ans_low = mid
-                hi = mid - 1 # Intentamos buscar uno más a la izquierda
+                hi = mid - 1
             else:
                 low = mid + 1
         
-        # --- BÚSQUEDA BINARIA 2: Límite Superior (Upper Bound) ---
-        # Buscamos el índice R tal que seq[R] <= B
+        # --- Busqueda  2: Limite Superior ---
+        # Buscamos el último índice donde seq[mid] <= B
         low = 0
         hi = len(seq) - 1
-        ans_high = -1 # Valor por defecto
+        ans_high = -1 
         
         while low <= hi:
             mid = (low + hi) // 2
-            if seq[mid] <= B:
+            if seq[mid] <= b:
                 ans_high = mid
-                low = mid + 1 # Intentamos buscar uno más a la derecha
+                low = mid + 1
             else:
                 hi = mid - 1
 
-        # Calcular cantidad
-        # Si el rango es inválido (ej. A > B o números fuera de rango), el conteo es 0
         if ans_low > ans_high:
-            result = 0
+            ans = 0
         else:
-            result = ans_high - ans_low + 1
+            ans = ans_high - ans_low + 1
 
-        print(f"Case {case_num}: {result}")
+        print(f"Case {i+1}: {ans}")
 
-if __name__ == '__main__':
-    solve()
+
+main()
